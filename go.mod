@@ -1,6 +1,6 @@
 module github.com/Nermin-J/gRPC-proxy
 
-go 1.21.3
+go 1.20
 
 require github.com/prometheus/client_golang v1.20.5
 
