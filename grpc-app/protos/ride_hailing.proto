@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package ridehailing;
+
+option go_package = "/ridehailing";
+
+service RideService {
+  // User requests a ride
+  rpc RequestRide(RideRequest) returns (RideResponse);
+
+  // Stream driver's location to the user
+  rpc StreamDriverLocation(DriverLocationRequest) returns (stream DriverLocation);
+
+  // Driver sends continuous location updates
+  rpc UpdateDriverLocation(stream DriverLocation) returns (LocationUpdateResponse);
+
+  // End the ride and process payment
+  rpc CompleteRide(RideCompletionRequest) returns (RideCompletionResponse);
+}
+
+// User ride request
+message RideRequest {
+  string user_id = 1;
+  string pickup_location = 2;
+  string dropoff_location = 3;
+}
+
+// Response when a ride is assigned
+message RideResponse {
+  string ride_id = 1;
+  string driver_id = 2;
+  string driver_name = 3;
+  string car_model = 4;
+  string car_plate = 5;
+  string status = 6; // "assigned", "pending"
+}
+
+// Request for driver location streaming
+message DriverLocationRequest {
+  string ride_id = 1;
+}
+
+// Streaming driver's live location to the user
+message DriverLocation {
+  string driver_id = 1;
+  double latitude = 2;
+  double longitude = 3;
+  string timestamp = 4;
+}
+
+// Driver sends location updates
+message LocationUpdateResponse {
+  string status = 1; // "success" or "error"
+}
+
+// Completing the ride
+message RideCompletionRequest {
+  string ride_id = 1;
+  double fare_amount = 2;
+}
+
+message RideCompletionResponse {
+  string status = 1; // "completed" or "failed"
+  string payment_status = 2; // "paid", "pending"
+}
