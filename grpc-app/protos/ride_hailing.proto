@@ -8,6 +8,9 @@ service RideService {
   // User requests a ride
   rpc RequestRide(RideRequest) returns (RideResponse);
 
+  // just to showcase proxy logic in case of multiple servers
+  rpc RequestAppId(Empty) returns (RequestAppIdResponse);
+
   // Stream driver's location to the user
   rpc StreamDriverLocation(DriverLocationRequest) returns (stream DriverLocation);
 
@@ -62,4 +65,10 @@ message RideCompletionRequest {
 message RideCompletionResponse {
   string status = 1; // "completed" or "failed"
   string payment_status = 2; // "paid", "pending"
+}
+
+message Empty {}
+
+message RequestAppIdResponse {
+  string app_id = 1;
 }
