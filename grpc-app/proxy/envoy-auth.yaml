@@ -1,0 +1,85 @@
+static_resources:
+  listeners:
+    - name: listener_0
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 9901
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_grpc
+                codec_type: AUTO # Automatically detect HTTP version (supports both HTTP/1 and HTTP/2)
+                route_config:
+                  name: local_route
+                  virtual_hosts:
+                    - name: local_service
+                      domains: ["*"] # Accept requests from any domain
+                      routes:
+                        - match:
+                            prefix: "/" # Matches all incoming requests
+                          route:
+                            cluster: grpc_service_cluster
+                            timeout: 0s # Infinite timeout for long-running gRPC calls
+
+                http_filters:
+                  - name: envoy.filters.http.grpc_stats # Adding the gRPC stats filter
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_stats.v3.FilterConfig
+                      emit_filter_state: true # Optional: to emit filter state metrics
+
+                  - name: envoy.filters.http.ext_authz
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+                      grpc_service:
+                        envoy_grpc:
+                          cluster_name: ext-authz
+                        timeout: 0.5s
+                      include_peer_certificate: true
+
+                  # Route filter for routing the request to the backend
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+                access_log:
+                  - name: envoy.access_loggers.stdout
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+
+  clusters:
+    - name: grpc_service_cluster
+      connect_timeout: 0.25s # Time Envoy waits to establish a connection to the backend
+      type: LOGICAL_DNS
+      dns_lookup_family: V4_ONLY
+      lb_policy: ROUND_ROBIN
+      http2_protocol_options: {} # Required for gRPC (since it uses HTTP/2)
+      load_assignment:
+        cluster_name: grpc_service_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: 0.0.0.0 # Points to your gRPC service running on localhost
+                      port_value: 50051 # The gRPC service runs on port 4040
+
+    # Cluster for the external authentication service
+    - name: ext-authz
+      type: STATIC
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {} # Required for gRPC (since it uses HTTP/2)
+      load_assignment:
+        cluster_name: ext-authz
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: 0.0.0.0
+                      port_value: 40041

@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-server-app
+  labels:
+    app: grpc-server-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc-server-app
+  template:
+    metadata:
+      labels:
+        app: grpc-server-app
+    spec:
+      containers:
+        - name: grpc-server-app
+          image: grpc-server:latest  # Uses the local Minikube image
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 50051
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-server-app-service
+spec:
+  selector:
+    app: grpc-server-app
+  ports:
+    - protocol: TCP
+      port: 50051
+      targetPort: 50051
+  type: ClusterIP  # Change to NodePort if needed
+
