@@ -5,6 +5,7 @@ static_resources:
         socket_address:
           address: 0.0.0.0
           port_value: 9901 # Port on which Envoy will listen for incoming connections (e.g., 9901)
+          
       filter_chains: # Define filter chains to process incoming connections
         - filters: # List of filters applied to the connection
             - name: envoy.filters.network.http_connection_manager # HTTP connection manager filter - handles HTTP requests
@@ -21,7 +22,7 @@ static_resources:
                         - match: # Define matching criteria for requests
                             prefix: "/" # Match requests with any prefix ("/" means all requests will match)
                           route: # Define the action to take when a request matches
-                            cluster: grpc_service_cluster # Route the request to the upstream cluster named 'grpc_service_cluster'
+                            cluster: grpc_service_cluster_all_backend # Route the request to the upstream cluster named 'grpc_service_cluster'
                             timeout: 0s # Set timeout for the route - 0s means infinite timeout (be careful in production, consider setting appropriate timeouts)
 
                 http_filters: # HTTP filters applied to requests within the HTTP connection manager - executed in order
@@ -41,14 +42,14 @@ static_resources:
                       "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
 
   clusters: # Define upstream clusters that Envoy can forward traffic to
-    - name: grpc_service_cluster # Name of the cluster, must match the cluster name used in routes
+    - name: grpc_service_cluster_all_backend # Name of the cluster, must match the cluster name used in routes
       connect_timeout: 0.25s # Timeout for establishing a new connection to an upstream host (0.25 seconds in this case)
-      type: LOGICAL_DNS # Cluster type - LOGICAL_DNS resolves DNS names dynamically
+      type: STRICT_DNS # Cluster type - LOGICAL_DNS resolves DNS names dynamically
       dns_lookup_family: V4_ONLY # DNS lookup family - V4_ONLY means only resolve IPv4 addresses
       lb_policy: ROUND_ROBIN # Load balancing policy - ROUND_ROBIN distributes requests evenly across endpoints
       http2_protocol_options: {} # HTTP/2 protocol options - required for gRPC to use HTTP/2, keep it empty for default HTTP/2 settings
       load_assignment:
-        cluster_name: grpc_service_cluster # Must match the cluster name
+        cluster_name: grpc_service_cluster_all_backend # Must match the cluster name
         endpoints: # Define the endpoints (upstream services) for this cluster
           - lb_endpoints: # List of load balancer endpoints
               - endpoint: # Define a single endpoint
@@ -56,3 +57,13 @@ static_resources:
                     socket_address:
                       address: 0.0.0.0 # Address of the gRPC service - in this example, it's set to 0.0.0.0, which might refer to localhost within a container or the same host. In a real setup, use the actual IP or hostname of your gRPC service. Consider changing to 127.0.0.1 or localhost if the service is on the same machine.
                       port_value: 50051 # Port on which the gRPC service is running (e.g., 50051)
+              - endpoint: # Define a single endpoint
+                  address: # Address of the endpoint
+                    socket_address:
+                      address: 0.0.0.0 # Address of the gRPC service - in this example, it's set to 0.0.0.0, which might refer to localhost within a container or the same host. In a real setup, use the actual IP or hostname of your gRPC service. Consider changing to 127.0.0.1 or localhost if the service is on the same machine.
+                      port_value: 50052 # Port on which the gRPC service is running (e.g., 50052)
+              - endpoint: # Define a single endpoint
+                  address: # Address of the endpoint
+                    socket_address:
+                      address: 0.0.0.0 # Address of the gRPC service - in this example, it's set to 0.0.0.0, which might refer to localhost within a container or the same host. In a real setup, use the actual IP or hostname of your gRPC service. Consider changing to 127.0.0.1 or localhost if the service is on the same machine.
+                      port_value: 50053 # Port on which the gRPC service is running (e.g., 50053)

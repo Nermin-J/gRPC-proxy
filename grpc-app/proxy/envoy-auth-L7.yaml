@@ -64,7 +64,7 @@ static_resources:
                   address:
                     socket_address:
                       address: 0.0.0.0 # Points to your gRPC service running on localhost
-                      port_value: 50051 # The gRPC service runs on port 4040
+                      port_value: 50051 # The gRPC service runs on port 50051
 
     # Cluster for the external authentication service
     - name: ext-authz
